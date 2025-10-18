@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Template - Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 60px;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 20px;
+            opacity: 0.95;
+        }
+
+        .content {
+            margin-bottom: 40px;
+        }
+
+        .usage-guide {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+        }
+
+        .usage-guide h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: #333;
+        }
+
+        .usage-codes {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 16px;
+        }
+
+        .code-block h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .code-block pre {
+            margin: 0;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .code-block code {
+            font-family: 'Monaco', 'Consolas', monospace;
+            color: #e83e8c;
+        }
+
+        .demo-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .demo-section h2 {
+            font-size: 28px;
+            margin-bottom: 24px;
+            color: #333;
+            text-align: center;
+        }
+
+        .demo-content {
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            text-align: center;
+        }
+
+        .demo-content p {
+            font-size: 18px;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .control-btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .control-btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-open {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-close {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .btn-toggle {
+            background: #34d399;
+            color: white;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            opacity: 0.9;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 968px) {
+            .header h1 {
+                font-size: 36px;
+            }
+
+            .usage-codes {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💬 Chatbot Template</h1>
+            <p>대화형 챗봇 위젯 - Cloudflare Pages</p>
+        </div>
+
+        <div class="content">
+            <!-- 데모 섹션 -->
+            <div class="demo-section">
+                <h2>🎨 AI 챗봇 데모</h2>
+                <div class="demo-content">
+                    <p>
+                        오른쪽 하단의 챗봇 아이콘을 클릭하거나<br>
+                        아래 버튼으로 제어해보세요! 👇
+                    </p>
+                </div>
+                <div class="control-buttons">
+                    <button class="control-btn btn-open" id="btn-open">열기 (Open)</button>
+                    <button class="control-btn btn-close" id="btn-close">닫기 (Close)</button>
+                    <button class="control-btn btn-toggle" id="btn-toggle">토글 (Toggle)</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Built with ❤️ for Cloudflare Pages</p>
+        </div>
+    </div>
+
+    <!-- ES6 모듈 방식으로 소스 파일 직접 로딩 -->
+    <script type="module">
+        import { Chatbot } from './src/index.js';
+
+        const chatbot = new Chatbot({
+            position: 'bottom-right',
+            theme: 'light',
+            greeting: '안녕하세요! AI 어시스턴트입니다. 😊\n무엇을 도와드릴까요?'
+        });
+
+        console.log('Chatbot instance:', chatbot);
+
+        // 버튼 이벤트 리스너
+        document.getElementById('btn-open').addEventListener('click', () => {
+            chatbot.open();
+            console.log('Chatbot opened');
+        });
+
+        document.getElementById('btn-close').addEventListener('click', () => {
+            chatbot.close();
+            console.log('Chatbot closed');
+        });
+
+        document.getElementById('btn-toggle').addEventListener('click', () => {
+            chatbot.toggle();
+            console.log('Chatbot toggled');
+        });
+
+        // 전역으로 노출 (디버깅용)
+        window.chatbot = chatbot;
+    </script>
+</body>
+</html>

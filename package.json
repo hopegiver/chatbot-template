@@ -1,0 +1,23 @@
+{
+  "name": "chatbot-template",
+  "version": "1.0.0",
+  "description": "Embeddable chatbot widget template for Cloudflare Pages",
+  "main": "dist/chatbot-template.min.js",
+  "type": "module",
+  "scripts": {
+    "build": "node build.js",
+    "watch": "node build.js --watch"
+  },
+  "keywords": [
+    "chatbot",
+    "widget",
+    "embeddable",
+    "cloudflare-pages",
+    "vanilla-js"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.19.0"
+  }
+}
