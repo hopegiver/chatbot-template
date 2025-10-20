@@ -97,17 +97,21 @@ export class ChatWindow {
     this.onSendMessage(text);
   }
 
+  /**
+   * 메시지 추가 (OpenAI 형식)
+   * @param {Object} message - {role: 'user'|'assistant', content: string}
+   */
   addMessage(message) {
     const messagesContainer = document.querySelector('#chatbot-messages');
     if (!messagesContainer) return;
 
     const messageEl = createElement('div', {
-      className: `chatbot-message ${message.type}`
+      className: `chatbot-message ${message.role}`
     });
 
     messageEl.innerHTML = `
       <div class="chatbot-message-content">
-        ${message.text}
+        ${message.content}
       </div>
       <div class="chatbot-message-time">${message.time || this.getCurrentTime()}</div>
     `;

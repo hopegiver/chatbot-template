@@ -197,7 +197,7 @@ export const styles = `
     border-bottom-right-radius: 4px;
   }
 
-  .chatbot-message.bot .chatbot-message-content {
+  .chatbot-message.assistant .chatbot-message-content {
     background: white;
     color: #333;
     border: 1px solid #e0e0e0;
@@ -211,7 +211,7 @@ export const styles = `
     text-align: right;
   }
 
-  .chatbot-message.bot .chatbot-message-time {
+  .chatbot-message.assistant .chatbot-message-time {
     text-align: left;
   }
 

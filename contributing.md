@@ -17,7 +17,7 @@
 ```
 chatbot-template/
 ├── src/
-│   ├── core/                  # 챗봇 핵심 엔진 (절대 건드리지 말 것)
+│   ├── core/                  # 챗봇 핵심 엔진 (인터페이스는 유지하되 리팩토링 규칙)
 │   │   ├── chatbot.js        # 챗봇 메인 클래스 (대화 관리, 모듈 통합)
 │   │   ├── state.js          # 대화 상태 관리
 │   │   └── api.js            # 백엔드 API 서버 연동
@@ -204,9 +204,9 @@ const messages = state.getState('messages');
 const history = state.getConversationHistory();
 const sessionId = state.getState('sessionId');
 
-// 메시지 추가
-state.addMessage({ type: 'user', text: '안녕하세요' });
-state.addMessage({ type: 'bot', text: '안녕하세요!' });
+// 메시지 추가 (OpenAI 형식)
+state.addMessage({ role: 'user', content: '안녕하세요' });
+state.addMessage({ role: 'assistant', content: '안녕하세요!' });
 
 // 컨텍스트 관리
 state.setContext('userName', '홍길동');
@@ -254,12 +254,12 @@ this.addBotMessage(response.reply);
 // 6. 대화 저장
 this.state.saveToStorage();
 
-// 메시지 객체 구조
+// 메시지 객체 구조 (OpenAI 형식 통일)
 {
-  type: 'user' | 'bot',
-  text: string,
-  time: string,  // HH:MM 형식 (자동 생성)
-  id: number     // 고유 ID (자동 생성)
+  role: 'user' | 'assistant',  // OpenAI 표준 (구 type 필드)
+  content: string,               // 메시지 내용 (구 text 필드)
+  time: string,                  // HH:MM 형식 (자동 생성)
+  id: number                     // 고유 ID (자동 생성)
 }
 ```
 
@@ -1098,6 +1098,21 @@ window.ChatbotTemplate = {
 
 **주요 변경사항**
 
+**v3.1 (2025-10-20) - API 안정성 및 OpenAI 형식 통일**
+- **OpenAI 형식 완전 통일**: 모든 메시지 형식을 OpenAI 표준으로 변경 (`{role, content}`)
+  - `type` → `role` (`'user'` | `'assistant'`)
+  - `text` → `content`
+  - CSS 클래스 `.bot` → `.assistant`
+- **APIClient 클래스 도입**: 기존 함수 기반 → 클래스 기반 구조
+  - 타임아웃 제어 (AbortController + finally 블록 정리)
+  - 재시도 로직 (Exponential Backoff + Jitter)
+  - HTTP status 기반 재시도 판단
+  - 사용자 친화적 에러 메시지 + 원본 에러 보존
+  - JSON 파싱 실패 처리 강화
+  - 스트리밍 지원 (response.body null 체크, timeout, reader 정리)
+- **State 구조 단순화**: `conversationHistory` 제거, `messages`만 사용
+- **싱글톤 패턴 제거**: `new APIClient()` 직접 사용
+
 **v3.0 (2025-10-19) - 모듈 시스템 도입**
 - Handlers 폴더 제거 → Modules 폴더로 재구성
 - 모듈별 완전 독립 구조 (UI + 로직 + 스타일 통합)
@@ -1110,4 +1125,4 @@ window.ChatbotTemplate = {
 - Mock API → 실제 API 엔드포인트 연동
 - 대화 히스토리 컨텍스트 관리 추가
 
-마지막 업데이트: 2025-10-19
+마지막 업데이트: 2025-10-20

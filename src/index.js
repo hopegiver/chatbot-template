@@ -4,6 +4,7 @@ import { styles } from './styles/chatbot.css.js';
 import { surveyStyles } from './modules/survey/survey.css.js';
 import { Chatbot } from './core/chatbot.js';
 import { State, getState } from './core/state.js';
+import { APIClient } from './core/api.js';
 import { FloatingButton } from './components/FloatingButton.js';
 import { ChatWindow } from './components/ChatWindow.js';
 
@@ -31,6 +32,7 @@ if (typeof window !== 'undefined') {
     Chatbot,
     State,
     getState,
+    APIClient,
     components: {
       FloatingButton,
       ChatWindow
@@ -48,6 +50,7 @@ export {
   Chatbot,
   State,
   getState,
+  APIClient,
   FloatingButton,
   ChatWindow
 };

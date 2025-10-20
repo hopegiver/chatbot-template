@@ -3,7 +3,7 @@
 import { FloatingButton } from '../components/FloatingButton.js';
 import { ChatWindow } from '../components/ChatWindow.js';
 import { getState } from './state.js';
-import { sendChatMessage, initSession, setApiBaseUrl } from './api.js';
+import { APIClient } from './api.js';
 import { SurveyModule } from '../modules/survey/index.js';
 
 export class Chatbot {
@@ -14,8 +14,11 @@ export class Chatbot {
       offset: { x: 20, y: 20 },
       greeting: '안녕하세요! 무엇을 도와드릴까요?',
       systemPrompt: null, // 시스템 프롬프트 (선택적)
-      apiBaseUrl: null,   // API 서버 URL (선택적)
+      apiBaseUrl: '/api',  // API 서버 URL
+      timeout: 30000,      // 타임아웃 (30초)
+      retryAttempts: 3,    // 재시도 횟수
       maxHistoryLength: 5, // 최대 히스토리 개수
+      useMock: false,      // Mock API 사용 여부
       ...config
     };
 
@@ -24,6 +27,15 @@ export class Chatbot {
     this.container = null;
     this.floatingButton = null;
     this.chatWindow = null;
+
+    // API 클라이언트 초기화
+    this.apiClient = new APIClient({
+      baseUrl: this.config.apiBaseUrl,
+      timeout: this.config.timeout,
+      retryAttempts: this.config.retryAttempts,
+      maxHistoryLength: this.config.maxHistoryLength,
+      useMock: this.config.useMock
+    });
 
     // 모듈 초기화
     this.modules = {};
@@ -36,11 +48,6 @@ export class Chatbot {
    */
   async init() {
     console.log('Chatbot initialized with config:', this.config);
-
-    // API Base URL 설정 (config에서 제공된 경우)
-    if (this.config.apiBaseUrl) {
-      setApiBaseUrl(this.config.apiBaseUrl);
-    }
 
     // 컨테이너 생성
     this.createContainer();
@@ -83,7 +90,7 @@ export class Chatbot {
 
       // 세션 ID가 없으면 새로 생성
       if (!this.state.getState('sessionId')) {
-        const { sessionId } = await initSession();
+        const { sessionId } = await this.apiClient.initSession();
         this.state.setSessionId(sessionId);
         console.log('New session created:', sessionId);
       }
@@ -184,7 +191,7 @@ export class Chatbot {
       const history = this.getRecentHistory();
       const sessionId = this.state.getState('sessionId');
 
-      const response = await sendChatMessage(text, history, sessionId);
+      const response = await this.apiClient.sendMessage(text, history, sessionId);
 
       // 응답 받으면 타이핑 인디케이터 숨기기
       this.state.setTyping(false);
@@ -215,32 +222,26 @@ export class Chatbot {
       this.state.setTyping(false);
       this.chatWindow.hideTypingIndicator();
 
-      // 에러 메시지 표시
-      this.addBotMessage('죄송합니다. 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      // API 클라이언트가 생성한 사용자 친화적 에러 메시지 표시
+      this.addBotMessage(error.message);
     }
   }
 
   /**
-   * 최근 대화 히스토리 가져오기 (최대 5개)
+   * 최근 대화 히스토리 가져오기 (OpenAI 형식)
    */
   getRecentHistory() {
-    const messages = this.state.getState('messages');
     const maxLength = this.config.maxHistoryLength || 5;
-
-    // 최근 N개의 메시지를 API 형식으로 변환
-    return messages.slice(-maxLength * 2).map(msg => ({
-      role: msg.type === 'user' ? 'user' : 'assistant',
-      content: msg.text
-    }));
+    return this.state.getConversationHistory(maxLength);
   }
 
   /**
-   * 사용자 메시지 추가
+   * 사용자 메시지 추가 (OpenAI 형식)
    */
   addUserMessage(text) {
     const message = {
-      type: 'user',
-      text: text
+      role: 'user',
+      content: text
     };
 
     this.state.addMessage(message);
@@ -248,12 +249,12 @@ export class Chatbot {
   }
 
   /**
-   * 봇 메시지 추가
+   * 봇 메시지 추가 (OpenAI 형식)
    */
   addBotMessage(text) {
     const message = {
-      type: 'bot',
-      text: text
+      role: 'assistant',
+      content: text
     };
 
     this.state.addMessage(message);

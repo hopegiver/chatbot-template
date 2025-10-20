@@ -3,9 +3,8 @@
 export class State {
   constructor() {
     this.state = {
-      // 대화 관련
-      conversationHistory: [], // OpenAI 메시지 포맷: [{role, content}]
-      messages: [],            // UI 표시용 메시지: [{type, text, time, id}]
+      // 대화 관련 (OpenAI 형식으로 통일)
+      messages: [],            // 메시지: [{role: 'user'|'assistant', content: string, time: string, id: number}]
       sessionId: null,         // 세션 ID
       context: {},             // 대화 컨텍스트 (사용자 정보, 상태 등)
       isTyping: false,         // 봇 타이핑 중 여부
@@ -72,12 +71,14 @@ export class State {
   }
 
   /**
-   * 메시지 추가 (UI용)
+   * 메시지 추가 (OpenAI 형식)
+   * @param {Object} message - {role: 'user'|'assistant', content: string}
    */
   addMessage(message) {
     const messages = [...this.state.messages, {
-      ...message,
-      id: Date.now() + Math.random(),
+      role: message.role,
+      content: message.content,
+      id: message.id || (Date.now() + Math.random()),
       time: message.time || this.getCurrentTime()
     }];
     this.setState({ messages });
@@ -85,22 +86,20 @@ export class State {
   }
 
   /**
-   * 대화 히스토리 추가 (OpenAI용)
+   * 대화 히스토리 가져오기 (API 전송용, time/id 제외)
+   * @param {number} maxLength - 최대 메시지 쌍 개수 (기본: 전체)
+   * @returns {Array} [{role, content}, ...]
    */
-  addToConversation(role, content) {
-    const conversationHistory = [
-      ...this.state.conversationHistory,
-      { role, content }
-    ];
-    this.setState({ conversationHistory });
-    return conversationHistory;
-  }
+  getConversationHistory(maxLength = null) {
+    const history = this.state.messages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
 
-  /**
-   * 대화 히스토리 가져오기
-   */
-  getConversationHistory() {
-    return this.state.conversationHistory;
+    if (maxLength) {
+      return history.slice(-maxLength * 2);
+    }
+    return history;
   }
 
   /**
@@ -108,7 +107,6 @@ export class State {
    */
   clearConversation() {
     this.setState({
-      conversationHistory: [],
       messages: []
     });
   }
@@ -169,7 +167,6 @@ export class State {
    */
   reset() {
     this.state = {
-      conversationHistory: [],
       messages: [],
       sessionId: null,
       context: {},
@@ -185,7 +182,6 @@ export class State {
   saveToStorage() {
     try {
       localStorage.setItem('chatbot-state', JSON.stringify({
-        conversationHistory: this.state.conversationHistory,
         messages: this.state.messages,
         sessionId: this.state.sessionId,
         context: this.state.context,
@@ -205,7 +201,6 @@ export class State {
       if (saved) {
         const data = JSON.parse(saved);
         this.setState({
-          conversationHistory: data.conversationHistory || [],
           messages: data.messages || [],
           sessionId: data.sessionId || null,
           context: data.context || {},
