@@ -219,7 +219,6 @@ export class Chatbot {
       this.addUserMessage(text);
 
       // 타이핑 인디케이터 표시
-      this.state.setTyping(true);
       this.chatWindow.showTypingIndicator();
 
       // API 서버로 스트리밍 메시지 전송
@@ -233,7 +232,6 @@ export class Chatbot {
         (chunk) => {
           // 첫 청크 수신 시 타이핑 인디케이터 제거하고 메시지 시작
           if (!currentMessageId) {
-            this.state.setTyping(false);
             this.chatWindow.hideTypingIndicator();
             currentMessageId = this.chatWindow.startStreamingMessage();
           }
@@ -293,7 +291,6 @@ export class Chatbot {
 
     } finally {
       // 3. 타이핑 인디케이터 정리 (항상 실행)
-      this.state.setTyping(false);
       this.chatWindow.hideTypingIndicator();
 
       // 동시 전송 방지 플래그 해제

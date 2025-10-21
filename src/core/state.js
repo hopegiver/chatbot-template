@@ -4,15 +4,11 @@ export class State {
   constructor() {
     this.state = {
       // 대화 관련 (OpenAI 형식으로 통일)
-      messages: [],            // 메시지: [{role: 'user'|'assistant', content: string, time: string, id: number}]
+      messages: [],            // 메시지: [{role: 'user'|'assistant', content: string, time: string, id: string}]
       sessionId: null,         // 세션 ID
-      context: {},             // 대화 컨텍스트 (사용자 정보, 상태 등)
-      isTyping: false,         // 봇 타이핑 중 여부
-
-      // 사용자 관련
-      user: null,              // 사용자 정보
     };
     this.listeners = new Map(); // key: eventName, value: [callbacks]
+    this.messageIdCounter = 0; // 메시지 ID 증가 카운터
   }
 
   /**
@@ -78,11 +74,18 @@ export class State {
     const messages = [...this.state.messages, {
       role: message.role,
       content: message.content,
-      id: message.id || (Date.now() + Math.random()),
+      id: message.id || this.generateMessageId(),
       time: message.time || this.getCurrentTime()
     }];
     this.setState({ messages });
     return messages;
+  }
+
+  /**
+   * 메시지 ID 생성 (고유성 보장)
+   */
+  generateMessageId() {
+    return `msg-${Date.now()}-${++this.messageIdCounter}`;
   }
 
   /**
@@ -99,19 +102,14 @@ export class State {
 
   /**
    * 대화 히스토리 가져오기 (API 전송용, time/id 제외)
-   * @param {number} maxLength - 최대 메시지 쌍 개수 (기본: 전체)
+   * Note: 히스토리 길이 제한은 APIClient에서 처리
    * @returns {Array} [{role, content}, ...]
    */
-  getConversationHistory(maxLength = null) {
-    const history = this.state.messages.map(msg => ({
+  getConversationHistory() {
+    return this.state.messages.map(msg => ({
       role: msg.role,
       content: msg.content
     }));
-
-    if (maxLength) {
-      return history.slice(-maxLength * 2);
-    }
-    return history;
   }
 
   /**
@@ -124,32 +122,10 @@ export class State {
   }
 
   /**
-   * 컨텍스트 설정
-   */
-  setContext(key, value) {
-    const context = { ...this.state.context, [key]: value };
-    this.setState({ context });
-  }
-
-  /**
-   * 컨텍스트 가져오기
-   */
-  getContext(key) {
-    return key ? this.state.context[key] : this.state.context;
-  }
-
-  /**
    * 세션 ID 설정
    */
   setSessionId(sessionId) {
     this.setState({ sessionId });
-  }
-
-  /**
-   * 타이핑 상태 설정
-   */
-  setTyping(isTyping) {
-    this.setState({ isTyping });
   }
 
   /**
@@ -161,30 +137,14 @@ export class State {
   }
 
   /**
-   * 사용자 설정
-   */
-  setUser(user) {
-    this.setState({ user });
-  }
-
-  /**
-   * 로그아웃
-   */
-  logout() {
-    this.setState({ user: null });
-  }
-
-  /**
    * 상태 초기화
    */
   reset() {
     this.state = {
       messages: [],
-      sessionId: null,
-      context: {},
-      isTyping: false,
-      user: null
+      sessionId: null
     };
+    this.messageIdCounter = 0;
     this.notify('*', this.state, {});
   }
 
@@ -193,14 +153,27 @@ export class State {
    */
   saveToStorage() {
     try {
-      localStorage.setItem('chatbot-state', JSON.stringify({
-        messages: this.state.messages,
-        sessionId: this.state.sessionId,
-        context: this.state.context,
-        user: this.state.user
-      }));
+      const dataToSave = {
+        messages: this.state.messages.slice(-100),  // 최근 100개만 저장 (quota 관리)
+        sessionId: this.state.sessionId
+      };
+      localStorage.setItem('chatbot-state', JSON.stringify(dataToSave));
     } catch (error) {
-      console.warn('Failed to save state to localStorage:', error);
+      // Quota 초과 시 재시도
+      if (error.name === 'QuotaExceededError') {
+        console.warn('localStorage quota exceeded, saving fewer messages...');
+        try {
+          const dataToSave = {
+            messages: this.state.messages.slice(-50),  // 최근 50개만 저장
+            sessionId: this.state.sessionId
+          };
+          localStorage.setItem('chatbot-state', JSON.stringify(dataToSave));
+        } catch (retryError) {
+          console.error('Failed to save state even after reducing size:', retryError);
+        }
+      } else {
+        console.warn('Failed to save state to localStorage:', error);
+      }
     }
   }
 
@@ -214,9 +187,7 @@ export class State {
         const data = JSON.parse(saved);
         this.setState({
           messages: data.messages || [],
-          sessionId: data.sessionId || null,
-          context: data.context || {},
-          user: data.user || null
+          sessionId: data.sessionId || null
         });
       }
     } catch (error) {
