@@ -171,6 +171,71 @@ export class ChatWindow {
   }
 
   /**
+   * 스트리밍 메시지 시작 (빈 메시지 생성 후 ID 반환)
+   */
+  startStreamingMessage() {
+    const messagesContainer = document.querySelector('#chatbot-messages');
+    if (!messagesContainer) return null;
+
+    const messageId = `streaming-${Date.now()}-${Math.random()}`;
+    const messageEl = createElement('div', {
+      className: 'chatbot-message assistant streaming',
+      'data-message-id': messageId
+    });
+
+    messageEl.innerHTML = `
+      <div class="chatbot-message-content"></div>
+      <div class="chatbot-message-time">${this.getCurrentTime()}</div>
+    `;
+
+    messagesContainer.appendChild(messageEl);
+    this.scrollToBottom();
+
+    return messageId;
+  }
+
+  /**
+   * 스트리밍 메시지에 청크 추가
+   */
+  appendToStreamingMessage(messageId, chunk) {
+    if (!messageId) return;
+
+    const messageEl = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (!messageEl) return;
+
+    const contentEl = messageEl.querySelector('.chatbot-message-content');
+    if (contentEl) {
+      contentEl.textContent += chunk;
+      this.scrollToBottom();
+    }
+  }
+
+  /**
+   * 스트리밍 메시지 완료 (streaming 클래스 제거)
+   */
+  finalizeStreamingMessage(messageId) {
+    if (!messageId) return;
+
+    const messageEl = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (messageEl) {
+      messageEl.classList.remove('streaming');
+      messageEl.removeAttribute('data-message-id');
+    }
+  }
+
+  /**
+   * 스트리밍 메시지 제거 (에러 시)
+   */
+  removeStreamingMessage(messageId) {
+    if (!messageId) return;
+
+    const messageEl = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (messageEl) {
+      messageEl.remove();
+    }
+  }
+
+  /**
    * 마지막 메시지 제거 (롤백용)
    */
   removeLastMessage() {

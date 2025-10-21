@@ -198,7 +198,7 @@ export class Chatbot {
   }
 
   /**
-   * 사용자 메시지 처리
+   * 사용자 메시지 처리 (스트리밍)
    */
   async handleUserMessage(text) {
     // 1. 빈/공백 메시지 전송 방지
@@ -212,6 +212,7 @@ export class Chatbot {
     }
 
     this.isSending = true;
+    let currentMessageId = null;
 
     try {
       // 사용자 메시지 추가
@@ -221,35 +222,73 @@ export class Chatbot {
       this.state.setTyping(true);
       this.chatWindow.showTypingIndicator();
 
-      // API 서버로 메시지 전송
+      // API 서버로 스트리밍 메시지 전송
       const history = this.getRecentHistory();
       const sessionId = this.state.getState('sessionId');
 
-      const response = await this.apiClient.sendMessage(text, history, sessionId);
+      await this.apiClient.sendMessageWithStreaming(
+        text,
+        history,
+        // onChunk: 실시간 텍스트 수신
+        (chunk) => {
+          // 첫 청크 수신 시 타이핑 인디케이터 제거하고 메시지 시작
+          if (!currentMessageId) {
+            this.state.setTyping(false);
+            this.chatWindow.hideTypingIndicator();
+            currentMessageId = this.chatWindow.startStreamingMessage();
+          }
+          // 청크를 메시지에 추가
+          this.chatWindow.appendToStreamingMessage(currentMessageId, chunk);
+        },
+        // onComplete: 스트리밍 완료
+        (fullText) => {
+          // 스트리밍 메시지 완료
+          if (currentMessageId) {
+            this.chatWindow.finalizeStreamingMessage(currentMessageId);
+          }
 
-      // 응답 타입에 따라 모듈 호출 (확장 가능한 구조)
-      const responseType = response.type || 'text';
-      const moduleHandler = this.responseModules[responseType];
+          // state에 완성된 메시지 추가
+          const message = {
+            role: 'assistant',
+            content: fullText
+          };
+          this.state.addMessage(message);
 
-      if (moduleHandler && moduleHandler.handle) {
-        moduleHandler.handle(response);
-      } else {
-        // fallback: 알 수 없는 타입은 텍스트로 처리
-        console.warn(`Unknown response type: ${responseType}, falling back to text`);
-        this.responseModules.text.handle(response);
-      }
+          // API 성공 시에만 저장
+          this.state.saveToStorage();
+        },
+        // onError: 에러 처리
+        (error) => {
+          console.error('Streaming failed:', error);
 
-      // API 성공 시에만 저장
-      this.state.saveToStorage();
+          // 진행 중이던 스트리밍 메시지 제거
+          if (currentMessageId) {
+            this.chatWindow.removeStreamingMessage(currentMessageId);
+          }
+
+          // API 실패 시 사용자 메시지 롤백
+          this.state.removeLastMessage();
+          this.chatWindow.removeLastMessage();
+
+          // 에러 메시지 표시
+          this.addBotMessage(error.message);
+        },
+        sessionId
+      );
 
     } catch (error) {
       console.error('Failed to get bot response:', error);
 
-      // API 실패 시 사용자 메시지 롤백 (state와 UI 모두)
+      // 진행 중이던 스트리밍 메시지 제거
+      if (currentMessageId) {
+        this.chatWindow.removeStreamingMessage(currentMessageId);
+      }
+
+      // API 실패 시 사용자 메시지 롤백
       this.state.removeLastMessage();
       this.chatWindow.removeLastMessage();
 
-      // API 클라이언트가 생성한 사용자 친화적 에러 메시지 표시
+      // 에러 메시지 표시
       this.addBotMessage(error.message);
 
     } finally {
