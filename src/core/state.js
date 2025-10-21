@@ -86,6 +86,18 @@ export class State {
   }
 
   /**
+   * 마지막 메시지 제거 (롤백용)
+   */
+  removeLastMessage() {
+    if (this.state.messages.length > 0) {
+      const messages = this.state.messages.slice(0, -1);
+      this.setState({ messages });
+      return messages;
+    }
+    return this.state.messages;
+  }
+
+  /**
    * 대화 히스토리 가져오기 (API 전송용, time/id 제외)
    * @param {number} maxLength - 최대 메시지 쌍 개수 (기본: 전체)
    * @returns {Array} [{role, content}, ...]

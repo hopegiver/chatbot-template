@@ -171,6 +171,21 @@ export class ChatWindow {
   }
 
   /**
+   * 마지막 메시지 제거 (롤백용)
+   */
+  removeLastMessage() {
+    const messagesContainer = document.querySelector('#chatbot-messages');
+    if (!messagesContainer) return;
+
+    // .chatbot-message 중 마지막 요소 찾기
+    const messages = messagesContainer.querySelectorAll('.chatbot-message');
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      lastMessage.remove();
+    }
+  }
+
+  /**
    * 모든 메시지 삭제
    */
   clearMessages() {

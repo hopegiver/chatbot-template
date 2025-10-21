@@ -23,6 +23,7 @@ export class Chatbot {
     };
 
     this.isOpen = false;
+    this.isSending = false;  // 동시 전송 방지 플래그
     this.state = getState();
     this.container = null;
     this.floatingButton = null;
@@ -37,8 +38,8 @@ export class Chatbot {
       useMock: this.config.useMock
     });
 
-    // 모듈 초기화
-    this.modules = {};
+    // 응답 타입별 모듈 맵 (확장 가능)
+    this.responseModules = {};
 
     this.init();
   }
@@ -61,8 +62,8 @@ export class Chatbot {
     // 세션 초기화
     await this.initializeSession();
 
-    // 모듈 초기화
-    this.initializeModules();
+    // 응답 타입별 모듈 초기화
+    this.initializeResponseModules();
 
     // 초기 인사 메시지 추가
     if (this.config.greeting) {
@@ -73,11 +74,33 @@ export class Chatbot {
   }
 
   /**
-   * 모듈 초기화
+   * 응답 타입별 모듈 초기화 (확장 가능)
    */
-  initializeModules() {
-    this.modules.survey = new SurveyModule(this);
-    console.log('Modules initialized:', Object.keys(this.modules));
+  initializeResponseModules() {
+    // 설문 응답 모듈
+    this.responseModules.survey = {
+      module: new SurveyModule(this),
+      handle: (response) => {
+        const surveyUI = this.responseModules.survey.module.render(response.data);
+        this.chatWindow.addCustomElement(surveyUI);
+
+        // 설문 안내 메시지 (옵션)
+        if (response.message) {
+          this.addBotMessage(response.message);
+        }
+      }
+    };
+
+    // 텍스트 응답 모듈 (기본)
+    this.responseModules.text = {
+      handle: (response) => {
+        if (response.reply) {
+          this.addBotMessage(response.reply);
+        }
+      }
+    };
+
+    console.log('Response modules initialized:', Object.keys(this.responseModules));
   }
 
   /**
@@ -178,61 +201,73 @@ export class Chatbot {
    * 사용자 메시지 처리
    */
   async handleUserMessage(text) {
-    // 사용자 메시지 추가
-    this.addUserMessage(text);
+    // 1. 빈/공백 메시지 전송 방지
+    if (!text || !text.trim()) {
+      return;
+    }
 
-    // 봇 응답 생성 (API 서버 호출)
+    // 2. 동시 전송 방지
+    if (this.isSending) {
+      return;
+    }
+
+    this.isSending = true;
+
     try {
+      // 사용자 메시지 추가
+      this.addUserMessage(text);
+
       // 타이핑 인디케이터 표시
       this.state.setTyping(true);
       this.chatWindow.showTypingIndicator();
 
-      // API 서버로 메시지 전송 (최근 5개 히스토리 포함)
+      // API 서버로 메시지 전송
       const history = this.getRecentHistory();
       const sessionId = this.state.getState('sessionId');
 
       const response = await this.apiClient.sendMessage(text, history, sessionId);
 
-      // 응답 받으면 타이핑 인디케이터 숨기기
-      this.state.setTyping(false);
-      this.chatWindow.hideTypingIndicator();
+      // 응답 타입에 따라 모듈 호출 (확장 가능한 구조)
+      const responseType = response.type || 'text';
+      const moduleHandler = this.responseModules[responseType];
 
-      // 응답 타입에 따라 처리
-      if (response.type === 'survey' && response.data) {
-        // 설문 모듈 실행
-        const surveyUI = this.modules.survey.render(response.data);
-        this.chatWindow.addCustomElement(surveyUI);
-
-        // 설문 안내 메시지 (옵션)
-        if (response.message) {
-          this.addBotMessage(response.message);
-        }
+      if (moduleHandler && moduleHandler.handle) {
+        moduleHandler.handle(response);
       } else {
-        // 일반 텍스트 응답
-        if (response.reply) {
-          this.addBotMessage(response.reply);
-        }
+        // fallback: 알 수 없는 타입은 텍스트로 처리
+        console.warn(`Unknown response type: ${responseType}, falling back to text`);
+        this.responseModules.text.handle(response);
       }
 
-      // 대화 히스토리 저장
+      // API 성공 시에만 저장
       this.state.saveToStorage();
 
     } catch (error) {
       console.error('Failed to get bot response:', error);
-      this.state.setTyping(false);
-      this.chatWindow.hideTypingIndicator();
+
+      // API 실패 시 사용자 메시지 롤백 (state와 UI 모두)
+      this.state.removeLastMessage();
+      this.chatWindow.removeLastMessage();
 
       // API 클라이언트가 생성한 사용자 친화적 에러 메시지 표시
       this.addBotMessage(error.message);
+
+    } finally {
+      // 3. 타이핑 인디케이터 정리 (항상 실행)
+      this.state.setTyping(false);
+      this.chatWindow.hideTypingIndicator();
+
+      // 동시 전송 방지 플래그 해제
+      this.isSending = false;
     }
   }
 
   /**
-   * 최근 대화 히스토리 가져오기 (OpenAI 형식)
+   * 전체 대화 히스토리 가져오기 (OpenAI 형식)
+   * Note: 히스토리 길이 제한은 APIClient에서 처리
    */
   getRecentHistory() {
-    const maxLength = this.config.maxHistoryLength || 5;
-    return this.state.getConversationHistory(maxLength);
+    return this.state.getConversationHistory();
   }
 
   /**
