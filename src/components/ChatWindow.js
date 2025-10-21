@@ -20,11 +20,13 @@ export class ChatWindow {
       <!-- 헤더 -->
       <div class="chatbot-header">
         <div class="chatbot-header-info">
-          <div class="chatbot-avatar">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="white"/>
+          <button class="chatbot-menu-btn" id="chatbot-menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
-          </div>
+          </button>
           <div class="chatbot-title">
             <h3>AI 도우미</h3>
           </div>
@@ -35,6 +37,35 @@ export class ChatWindow {
           </svg>
         </button>
       </div>
+
+      <!-- 사이드 메뉴 -->
+      <div class="chatbot-sidebar" id="chatbot-sidebar">
+        <div class="chatbot-sidebar-header">
+          <h3>메뉴</h3>
+          <button class="chatbot-sidebar-close" id="chatbot-sidebar-close">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <div class="chatbot-sidebar-content">
+          <button class="chatbot-menu-item" id="menu-new-chat">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 5v10M5 10h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span>새 대화</span>
+          </button>
+          <button class="chatbot-menu-item" id="menu-clear">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M3 6h14M8 6V4h4v2M5 6v11a2 2 0 002 2h6a2 2 0 002-2V6H5z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span>대화 초기화</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 오버레이 -->
+      <div class="chatbot-overlay" id="chatbot-overlay"></div>
 
       <!-- 메시지 영역 -->
       <div class="chatbot-messages" id="chatbot-messages">
@@ -71,6 +102,12 @@ export class ChatWindow {
     const closeBtn = window.querySelector('#chatbot-close');
     const sendBtn = window.querySelector('#chatbot-send');
     const input = window.querySelector('#chatbot-input');
+    const menuBtn = window.querySelector('#chatbot-menu');
+    const sidebar = window.querySelector('#chatbot-sidebar');
+    const sidebarClose = window.querySelector('#chatbot-sidebar-close');
+    const overlay = window.querySelector('#chatbot-overlay');
+    const menuNewChat = window.querySelector('#menu-new-chat');
+    const menuClear = window.querySelector('#menu-clear');
 
     closeBtn.addEventListener('click', () => {
       this.onClose();
@@ -86,6 +123,34 @@ export class ChatWindow {
         this.sendMessage(input.value);
         input.value = '';
       }
+    });
+
+    // 메뉴 열기
+    menuBtn.addEventListener('click', () => {
+      sidebar.classList.add('open');
+      overlay.classList.add('visible');
+    });
+
+    // 메뉴 닫기
+    const closeSidebar = () => {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('visible');
+    };
+
+    sidebarClose.addEventListener('click', closeSidebar);
+    overlay.addEventListener('click', closeSidebar);
+
+    // 메뉴 항목 클릭
+    menuNewChat.addEventListener('click', () => {
+      // 새 대화 시작 (현재는 대화 초기화와 동일)
+      this.clearMessages();
+      closeSidebar();
+    });
+
+    menuClear.addEventListener('click', () => {
+      // 대화 초기화
+      this.clearMessages();
+      closeSidebar();
     });
   }
 

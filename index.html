@@ -105,24 +105,11 @@
             text-align: center;
         }
 
-        .demo-content {
-            min-height: 300px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #666;
-            text-align: center;
-        }
-
-        .demo-content p {
-            font-size: 18px;
-        }
-
         .control-buttons {
             display: flex;
             gap: 12px;
             justify-content: center;
-            margin-top: 30px;
+            padding: 20px 0;
         }
 
         .control-btn {
@@ -194,12 +181,6 @@
             <!-- 데모 섹션 -->
             <div class="demo-section">
                 <h2>🎨 AI 챗봇 데모</h2>
-                <div class="demo-content">
-                    <p>
-                        오른쪽 하단의 챗봇 아이콘을 클릭하거나<br>
-                        아래 버튼으로 제어해보세요! 👇
-                    </p>
-                </div>
                 <div class="control-buttons">
                     <button class="control-btn btn-open" id="btn-open">열기 (Open)</button>
                     <button class="control-btn btn-close" id="btn-close">닫기 (Close)</button>
@@ -218,7 +199,11 @@
         import { Chatbot } from './src/index.js';
 
         const chatbot = new Chatbot({
-            position: 'bottom-right',
+            // position: 'bottom-right',  // 기본값 사용 (지정하지 않으면 자동)
+            width: 380,                   // 챗봇 너비 (px)
+            height: 600,                  // 챗봇 높이 (px)
+            // maxHeight: 700,            // 기본값 사용
+            // minHeight: 400,            // 기본값 사용
             theme: 'light',
             greeting: '안녕하세요! AI 어시스턴트입니다. 😊\n무엇을 도와드릴까요?'
         });

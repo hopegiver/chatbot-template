@@ -9,16 +9,20 @@ import { SurveyModule } from '../modules/survey/index.js';
 export class Chatbot {
   constructor(config = {}) {
     this.config = {
-      position: 'bottom-right',
+      position: 'bottom-right',  // 'bottom-right', 'bottom-left', 'top-right', 'top-left'
+      width: 380,                // 챗봇 윈도우 너비 (px)
+      height: null,              // 챗봇 윈도우 높이 (null이면 자동: calc(100vh - 40px))
+      maxHeight: 700,            // 최대 높이 (px)
+      minHeight: 400,            // 최소 높이 (px)
       theme: 'light',
       offset: { x: 20, y: 20 },
       greeting: '안녕하세요! 무엇을 도와드릴까요?',
-      systemPrompt: null, // 시스템 프롬프트 (선택적)
-      apiBaseUrl: '/api',  // API 서버 URL
-      timeout: 30000,      // 타임아웃 (30초)
-      retryAttempts: 3,    // 재시도 횟수
-      maxHistoryLength: 5, // 최대 히스토리 개수
-      useMock: false,      // Mock API 사용 여부
+      systemPrompt: null,        // 시스템 프롬프트 (선택적)
+      apiBaseUrl: '/api',        // API 서버 URL
+      timeout: 30000,            // 타임아웃 (30초)
+      retryAttempts: 3,          // 재시도 횟수
+      maxHistoryLength: 5,       // 최대 히스토리 개수
+      useMock: false,            // Mock API 사용 여부
       ...config
     };
 
@@ -58,6 +62,9 @@ export class Chatbot {
 
     // 챗봇 윈도우 생성
     this.createChatWindow();
+
+    // 챗봇 윈도우 스타일 적용
+    this.applyChatWindowStyle();
 
     // 세션 초기화
     await this.initializeSession();
@@ -132,6 +139,36 @@ export class Chatbot {
     this.container.className = 'chatbot-container';
     this.container.setAttribute('data-position', this.config.position);
     document.body.appendChild(this.container);
+  }
+
+  /**
+   * 챗봇 윈도우에 동적 스타일 적용
+   */
+  applyChatWindowStyle() {
+    const windowEl = this.container.querySelector('.chatbot-window');
+    if (!windowEl) return;
+
+    // width 적용
+    if (this.config.width) {
+      windowEl.style.width = `${this.config.width}px`;
+    }
+
+    // height 적용
+    if (this.config.height) {
+      windowEl.style.height = `${this.config.height}px`;
+      // 높이를 지정했어도 화면보다 크지 않도록 제한
+      windowEl.style.maxHeight = `calc(100vh - 40px)`;
+    }
+
+    // maxHeight 적용 (height 지정 안 한 경우)
+    if (!this.config.height && this.config.maxHeight) {
+      windowEl.style.maxHeight = `min(${this.config.maxHeight}px, calc(100vh - 40px))`;
+    }
+
+    // minHeight 적용
+    if (this.config.minHeight) {
+      windowEl.style.minHeight = `${this.config.minHeight}px`;
+    }
   }
 
   /**
