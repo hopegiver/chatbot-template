@@ -31,7 +31,8 @@ export class APIClient {
       return this.mockResponse(message);
     }
 
-    // 히스토리 길이 제한 (최근 N개 대화쌍)
+    // 히스토리 길이 제한: maxHistoryLength개 대화쌍 = user/assistant 쌍이므로 *2
+    // 예: maxHistoryLength=5 → 10개 메시지 (user 5개 + assistant 5개)
     const recentHistory = history.slice(-this.options.maxHistoryLength * 2);
 
     // 현재 메시지 추가
@@ -75,10 +76,10 @@ export class APIClient {
   async sendMessageWithStreaming(message, history = [], onChunk, onComplete, onError, sessionId = null) {
     let timeoutId = null;
     let reader = null;
-    let controller = null;
 
     try {
-      // 히스토리 길이 제한 (최근 N개 대화쌍)
+      // 히스토리 길이 제한: maxHistoryLength개 대화쌍 = user/assistant 쌍이므로 *2
+      // 예: maxHistoryLength=5 → 10개 메시지 (user 5개 + assistant 5개)
       const recentHistory = history.slice(-this.options.maxHistoryLength * 2);
 
       const messages = [
@@ -93,7 +94,7 @@ export class APIClient {
       };
 
       // 타임아웃 제어
-      controller = new AbortController();
+      const controller = new AbortController();
       timeoutId = setTimeout(() => controller.abort(), this.options.timeout);
 
       const response = await fetch(this.endpoint, {
@@ -138,7 +139,7 @@ export class APIClient {
       onError?.(userError);
 
     } finally {
-      // 리소스 정리
+      // 리소스 정리 보장
       if (timeoutId !== null) {
         clearTimeout(timeoutId);
       }
