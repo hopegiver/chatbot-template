@@ -21,14 +21,12 @@ export class ChatWindow {
       <div class="chatbot-header">
         <div class="chatbot-header-info">
           <div class="chatbot-avatar">
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-              <circle cx="16" cy="16" r="16" fill="#667eea"/>
-              <path d="M16 18c3.3 0 6-2.7 6-6s-2.7-6-6-6-6 2.7-6 6 2.7 6 6 6zm0 2c-4 0-12 2-12 6v2h24v-2c0-4-8-6-12-6z" fill="white"/>
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="white"/>
             </svg>
           </div>
           <div class="chatbot-title">
-            <h3>쇼핑 도우미</h3>
-            <span class="chatbot-status">온라인</span>
+            <h3>AI 도우미</h3>
           </div>
         </div>
         <button class="chatbot-close-btn" id="chatbot-close">
@@ -110,11 +108,15 @@ export class ChatWindow {
     });
 
     messageEl.innerHTML = `
-      <div class="chatbot-message-content">
-        ${message.content}
-      </div>
+      <div class="chatbot-message-content"></div>
       <div class="chatbot-message-time">${message.time || this.getCurrentTime()}</div>
     `;
+
+    // 앞뒤 공백 제거하고 textContent로 설정 (XSS 방지 + 공백 처리)
+    const contentEl = messageEl.querySelector('.chatbot-message-content');
+    if (contentEl) {
+      contentEl.textContent = (message.content || '').trim();
+    }
 
     messagesContainer.appendChild(messageEl);
     this.scrollToBottom();
@@ -218,6 +220,12 @@ export class ChatWindow {
 
     const messageEl = document.querySelector(`[data-message-id="${messageId}"]`);
     if (messageEl) {
+      // 앞뒤 공백 제거
+      const contentEl = messageEl.querySelector('.chatbot-message-content');
+      if (contentEl) {
+        contentEl.textContent = contentEl.textContent.trim();
+      }
+
       messageEl.classList.remove('streaming');
       messageEl.removeAttribute('data-message-id');
     }

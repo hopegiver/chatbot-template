@@ -62,21 +62,20 @@ export const styles = `
     display: none;
   }
 
-  .chatbot-open .chatbot-floating-button .icon-chat {
+  /* 챗봇이 열리면 플로팅 버튼 숨김 (데스크톱) */
+  .chatbot-open .chatbot-floating-button {
     display: none;
-  }
-
-  .chatbot-open .chatbot-floating-button .icon-close {
-    display: block;
   }
 
   /* 챗봇 윈도우 */
   .chatbot-window {
     position: absolute;
-    bottom: 80px;
+    bottom: 0;
     right: 0;
     width: 380px;
-    height: 600px;
+    height: calc(100vh - 40px);
+    max-height: 700px;
+    min-height: 400px;
     background: white;
     border-radius: 16px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
@@ -98,26 +97,33 @@ export const styles = `
   .chatbot-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 20px;
+    padding: 16px 20px;
+    height: 60px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    box-sizing: border-box;
   }
 
   .chatbot-header-info {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
   }
 
   .chatbot-avatar {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.2);
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .chatbot-avatar svg {
+    width: 28px;
+    height: 28px;
   }
 
   .chatbot-title h3 {
@@ -168,6 +174,8 @@ export const styles = `
 
   .chatbot-message {
     margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
     animation: messageSlideIn 0.3s ease;
   }
 
@@ -182,18 +190,27 @@ export const styles = `
     }
   }
 
+  .chatbot-message.user {
+    align-items: flex-end;
+  }
+
+  .chatbot-message.assistant {
+    align-items: flex-start;
+  }
+
   .chatbot-message-content {
     padding: 12px 16px;
     border-radius: 18px;
-    max-width: 80%;
+    max-width: 75%;
     word-wrap: break-word;
-    white-space: pre-wrap;
+    display: inline-block;
+    line-height: 1.5;
+    white-space: pre-line;
   }
 
   .chatbot-message.user .chatbot-message-content {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    margin-left: auto;
     border-bottom-right-radius: 4px;
   }
 
@@ -208,11 +225,6 @@ export const styles = `
     font-size: 11px;
     color: #999;
     margin-top: 4px;
-    text-align: right;
-  }
-
-  .chatbot-message.assistant .chatbot-message-time {
-    text-align: left;
   }
 
   /* 타이핑 인디케이터 */
@@ -299,7 +311,7 @@ export const styles = `
   }
 
   /* 모바일 대응 - 전체 화면 */
-  @media (max-width: 480px) {
+  @media (max-width: 768px) {
     /* 컨테이너는 플로팅 버튼만 표시 */
     .chatbot-container {
       position: fixed;
@@ -317,22 +329,30 @@ export const styles = `
       z-index: 10001;
     }
 
-    /* 챗봇 열리면 전체 화면 */
+    /* 챗봇 열리면 전체 화면 (100% 상하좌우) */
     .chatbot-open .chatbot-window {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
       border-radius: 0;
+      margin: 0;
       z-index: 10000;
     }
 
     /* 챗봇 열리면 플로팅 버튼 숨김 */
     .chatbot-open .chatbot-floating-button {
       display: none;
+    }
+
+    /* 모바일에서 메시지 max-width 증가 */
+    .chatbot-message-content {
+      max-width: 85%;
     }
   }
 
